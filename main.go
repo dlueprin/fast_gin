@@ -14,6 +14,7 @@ func main() {
 	//global.Config.DB.Port = 3307
 	//fmt.Println(global.Config.DB)
 	//core.DumpConfig()
+	global.DB = core.InitGorm()
 
 	logrus.Infof("你好")
 	logrus.Debugf("你好")
