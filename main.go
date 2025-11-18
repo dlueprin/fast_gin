@@ -15,6 +15,7 @@ func main() {
 	//fmt.Println(global.Config.DB)
 	//core.DumpConfig()
 	global.DB = core.InitGorm()
+	global.Redis = core.InitRedis()
 
 	logrus.Infof("你好")
 	logrus.Debugf("你好")
