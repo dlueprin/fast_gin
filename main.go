@@ -17,9 +17,7 @@ func main() {
 	global.DB = core.InitGorm()
 	global.Redis = core.InitRedis()
 
-	if flags.Run() { //根据是否执行命令行布尔操作来决定是否继续运行web程序，有时我只是想看看版本，那么我运行完初始化，信息配置好后，拿到信息返回给我，程序的使命就完成了，就不需要继续运行
-		return
-	}
+	flags.Run() //根据是否执行命令行布尔操作来决定是否继续运行web程序，有时我只是想看看版本，那么我运行完初始化，信息配置好后，拿到信息返回给我，程序的使命就完成了，就不需要继续运行
 
 	fmt.Println("web servicing")
 }

@@ -4,6 +4,7 @@ import (
 	"fast_gin/global"
 	"flag"
 	"fmt"
+	"os"
 )
 
 // 可以通过go run main.go -h 查看使用了什么命令行参数
@@ -26,14 +27,13 @@ func Parse() { //解析的单词
 }
 
 // Run 根据解析后的参数来运行相应操作
-func Run() (ok bool) {
+func Run() {
 	if Options.DB {
-		fmt.Println("表结构迁移")
-		return true
+		MigrateDB()
+		os.Exit(0)
 	}
 	if Options.Version {
 		fmt.Println("当前后端版本：", global.Version)
-		return true
+		os.Exit(0)
 	}
-	return false
 }
