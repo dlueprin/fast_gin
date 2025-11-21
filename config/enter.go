@@ -5,4 +5,5 @@ type Config struct {
 	DB     DB     `yaml:"db"` //会先走到这里
 	Redis  Redis  `yaml:"redis"`
 	System System `yaml:"system"`
+	Jwt    Jwt    `yaml:"jwt"`
 }

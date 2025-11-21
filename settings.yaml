@@ -13,3 +13,7 @@ system:             # gin配置
     mode: release   # debug or release or test
     ip: 127.0.0.1
     port: 8080
+jwt:
+    expires: 8 #token过期时间，单位小时
+    issuer: dlueprin
+    key: qernkjadvae #token密钥
