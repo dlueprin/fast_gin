@@ -13,14 +13,18 @@ import (
 // 还有双token机制，登录时生成两个token，一个存活时间久用于刷新：reflesh_token，一个存活时间短，用于验证：access_token,
 // go get github.com/golang-jwt/jwt/v5
 
-type MyClaims struct { //千万不能存密码，因为jwt是编码不是加密
+type Claims struct {
 	UserID uint `json:"userID"`
+	RoleID uint `json:"roleID"` //区分管理员和普通用户
+}
+type MyClaims struct { //千万不能存密码，因为jwt是编码不是加密
+	Claims
 	jwt.RegisteredClaims
 }
 
-func SetToken(userID uint) (string, error) {
+func SetToken(data Claims) (string, error) {
 	SetClaims := MyClaims{
-		UserID: userID,
+		Claims: data,
 		RegisteredClaims: jwt.RegisteredClaims{
 			//newnumericdate:将go时间格式转换为jwt时间格式,使用全局变量的话要在前面加个time。duration
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(global.Config.Jwt.Expires) * time.Hour)), //有效时间
