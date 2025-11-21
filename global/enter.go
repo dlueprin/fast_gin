@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const Version = "0.0.3"
+const Version = "0.0.4"
 
 // 这些都是基础设施级别的全局变量，所以单独建包存放他们
 var (
