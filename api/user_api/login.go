@@ -1,8 +1,11 @@
 package user_api
 
-import "github.com/gin-gonic/gin"
+import (
+	"fast_gin/utils/res"
+	"github.com/gin-gonic/gin"
+)
 
 func (UserApi) LoginView(c *gin.Context) {
-	c.String(200, "登录页面")
+	res.OkWithMsg("登录页面", c)
 	return
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fast_gin/utils/jwts"
+	"fast_gin/utils/res"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -12,7 +13,7 @@ func AuthMiddleware(c *gin.Context) {
 	_, err := jwts.CheckToken(token)
 	if err != nil {
 		logrus.Errorf("用户auth请求处token验证失败：%s", err)
-		c.JSON(200, gin.H{"code": "7", "msg": "token认证失败", "data": gin.H{}})
+		res.FailWithMsg("token认证失败", c)
 		c.Abort() //直接拦截，不执行后面的中间件了
 		return
 	}
@@ -26,13 +27,13 @@ func AdminMiddleware(c *gin.Context) {
 	claims, err := jwts.CheckToken(token)
 	if err != nil {
 		logrus.Errorf("管理员auth请求处token验证失败：%s", err)
-		c.JSON(200, gin.H{"code": "7", "msg": "token认证失败", "data": gin.H{}})
+		res.FailWithMsg("token认证失败", c)
 		c.Abort()
 		return
 	}
 	if claims.RoleID != 1 {
 		logrus.Errorf("管理员auth请求处身份认证失败，roleID:%d", claims.RoleID)
-		c.JSON(200, gin.H{"code": "7", "msg": "角色认证失败", "data": gin.H{}})
+		res.FailWithMsg("角色认证失败", c)
 		c.Abort()
 		return
 	}
