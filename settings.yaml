@@ -19,4 +19,7 @@ jwt:
     key: qernkjadvae #token密钥
 image:
     size: 2 #单位mb
-    path: image 
+    path: image
+site:
+    login:
+        captcha: true

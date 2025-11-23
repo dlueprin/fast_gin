@@ -14,8 +14,8 @@ import (
 // go get github.com/golang-jwt/jwt/v5
 
 type Claims struct {
-	UserID uint `json:"userID"`
-	RoleID uint `json:"roleID"` //区分管理员和普通用户
+	UserID int  `json:"userID"`
+	RoleID int8 `json:"roleID"` //区分管理员和普通用户
 }
 type MyClaims struct { //千万不能存密码，因为jwt是编码不是加密
 	Claims

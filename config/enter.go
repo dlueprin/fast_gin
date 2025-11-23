@@ -7,4 +7,5 @@ type Config struct {
 	System System `yaml:"system"`
 	Jwt    Jwt    `yaml:"jwt"`
 	Image  Image  `yaml:"image"`
+	Site   Site   `yaml:"site"`
 }

@@ -38,5 +38,17 @@ func AdminMiddleware(c *gin.Context) {
 		return
 	}
 	logrus.Info("管理员auth请求处token验证成功")
+	c.Set("claims", claims) //将角色信息放入上下文
 	c.Next()
+}
+
+// GetAuth 也是为了视图方便用
+func GetAuth(c *gin.Context) (cl *jwts.MyClaims) {
+	cl = new(jwts.MyClaims)        //防止返回空指针，new了之后会返回空值
+	_claims, ok := c.Get("claims") //这里虽然没报错，但是存的值的类型可能不是我们想要的，所以要断言一下
+	if !ok {
+		return
+	}
+	cl, ok = _claims.(*jwts.MyClaims)
+	return
 }

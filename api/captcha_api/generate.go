@@ -20,7 +20,7 @@ func (CaptchaApi) GenerateView(c *gin.Context) {
 		NoiseCount:      10,
 		ShowLineOptions: 4,
 		Length:          4,
-		Source:          "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM",
+		Source:          "1234567890",
 	}
 	ca := base64Captcha.NewCaptcha(&driver, captcha.CaptchaStore)
 	id, b64s, _, err := ca.Generate()
