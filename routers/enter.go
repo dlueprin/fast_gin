@@ -16,6 +16,7 @@ func Run() {
 	//curl -X POST 127.0.0.1:8080/api/users/login
 	g := r.Group("api") //创建api开头的路由组
 	UserRouter(g)
+	ImageRouter(g)
 
 	addr := global.Config.System.Addr()
 	if global.Config.System.Mode == "release" {

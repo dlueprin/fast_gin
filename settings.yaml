@@ -17,3 +17,6 @@ jwt:
     expires: 8 #token过期时间，单位小时
     issuer: dlueprin
     key: qernkjadvae #token密钥
+image:
+    size: 2 #单位mb
+    path: image 

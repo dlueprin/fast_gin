@@ -6,4 +6,5 @@ type Config struct {
 	Redis  Redis  `yaml:"redis"`
 	System System `yaml:"system"`
 	Jwt    Jwt    `yaml:"jwt"`
+	Image  Image  `yaml:"image"`
 }
