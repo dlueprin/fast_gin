@@ -17,6 +17,7 @@ func Run() {
 	g := r.Group("api") //创建api开头的路由组
 	UserRouter(g)
 	ImageRouter(g)
+	CaptchaRouter(g)
 
 	addr := global.Config.System.Addr()
 	if global.Config.System.Mode == "release" {

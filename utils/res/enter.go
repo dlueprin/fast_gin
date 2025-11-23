@@ -13,7 +13,7 @@ type Response struct {
 
 func Ok(data any, msg string, c *gin.Context) {
 	c.JSON(200, Response{
-		Code: 200,
+		Code: 0, //-1表示失败
 		Data: data,
 		Msg:  msg,
 	})
