@@ -8,7 +8,7 @@ import (
 
 func BindJsonMiddleware[T any](c *gin.Context) {
 	var cr T
-	//should同时完成了校验和绑定
+	//should同时完成了校验和绑定，而且会自动将传入的参数数据类型转化为定义的结构体的数据类型
 	err := c.ShouldBindJSON(&cr)
 	if err != nil {
 		logrus.Errorf("参数校验失败：%s", err)
