@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fast_gin/service/redis_ser"
 	"fast_gin/utils/jwts"
 	"fast_gin/utils/res"
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,12 @@ func AuthMiddleware(c *gin.Context) {
 		c.Abort() //直接拦截，不执行后面的中间件了
 		return
 	}
+	if redis_ser.HasLogout(token) {
+		logrus.Errorf("用户auth请求处token已登出")
+		res.FailWithMsg("该账号已登出", c)
+		c.Abort()
+		return
+	}
 	logrus.Info("用户auth请求处token验证成功")
 	//直接放行
 	c.Next()
@@ -28,6 +35,12 @@ func AdminMiddleware(c *gin.Context) {
 	if err != nil {
 		logrus.Errorf("管理员auth请求处token验证失败：%s", err)
 		res.FailWithMsg("token认证失败", c)
+		c.Abort()
+		return
+	}
+	if redis_ser.HasLogout(token) {
+		logrus.Errorf("管理员auth请求处token已登出")
+		res.FailWithMsg("该账号已登出", c)
 		c.Abort()
 		return
 	}
