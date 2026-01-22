@@ -47,10 +47,10 @@ func (Mylog) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := entry.Time.Format("2006-01-02 15:04:05") //这个时间必须一致，不然就出错
 	if entry.HasCaller() {
 		//自定义文件路径
-		funcval := entry.Caller.Function                                                 //获取当前函数调用栈信息，比如我是在main调用了logrus
-		filevar := fmt.Sprintf("%s:%d", path.Base(entry.Caller.File), entry.Caller.Line) //通过文件名获取路径（方便终端点击导航），然后去掉路径只保留文件名，然后提取行号
+		funcVal := entry.Caller.Function                                                 //获取当前函数调用栈信息，比如我是在main调用了logrus
+		fileVar := fmt.Sprintf("%s:%d", path.Base(entry.Caller.File), entry.Caller.Line) //通过文件名获取路径（方便终端点击导航），然后去掉路径只保留文件名，然后提取行号
 		//自定义输出格式，\x1b[%dm是表示后面都用%d的颜色，再来一次设成0就回去了
-		fmt.Fprintf(b, "[%s] \x1b[%dm[%s]\x1b[0m %s %s %s\n", timestamp, leverColor, entry.Level, filevar, funcval, entry.Message)
+		fmt.Fprintf(b, "[%s] \x1b[%dm[%s]\x1b[0m %s %s %s\n", timestamp, leverColor, entry.Level, fileVar, funcVal, entry.Message)
 	}
 	return b.Bytes(), nil
 }

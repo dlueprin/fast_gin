@@ -1,0 +1,78 @@
+version: '3.2'
+#都不配端口映射，到时候用nginx连，不暴露端口出去
+services:
+  mysql:
+    image: "mysql:5.7"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: db
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --max_allowed_packet=128M;
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/data.sql:/docker-entrypoint-initdb.d/data.sql
+    networks:
+      fg_network:
+        ipv4_address: 10.2.0.2
+  redis:
+    restart: always
+    image: redis:5.0.5
+    networks:
+      fg_network:
+        ipv4_address: 10.2.0.3
+  server:
+    restart: always
+    build: #现场构建镜像
+      context: ../ #当前的相对路径找dockerfile
+    networks:
+      fg_network:
+        ipv4_address: 10.2.0.7
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      - mysql
+#      - es
+      - redis
+    volumes:
+      - ./server/settings.yaml:/app/settings.yaml
+      - ./server/uploads:/app/uploads
+      - ./server/logs:/app/logs
+#      - ./web/dist:/app/web
+    command: "/app/main"
+  web:
+    image: nginx:latest
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/logs:/var/log/nginx/
+      - ./web/dist:/usr/share/nginx/web #映射前端
+      - ./server/uploads:/app/uploads
+      # 👇 重点修改这一行：把 /usr/share/nginx/cert 改为 /etc/nginx/cert
+      - ./nginx/cert:/etc/nginx/cert
+    #使用启动命令删掉默认的配置文件，防止显示默认页而拦截请求了，还有静态文件的访问权限，因为静态文件是经过nginx访问而不是后端
+    command: >
+      /bin/bash -c "
+      rm -f /etc/nginx/conf.d/default.conf && 
+      chown -R nginx:nginx /app/uploads || true && 
+      chmod -R 755 /app/uploads || true && 
+      nginx -g 'daemon off;'
+      "
+    networks:
+      fg_network:
+        ipv4_address: 10.2.0.8
+    ports:
+      - "80:80"
+      - "443:443"
+networks:  #定义容器连接网络
+  fg_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24

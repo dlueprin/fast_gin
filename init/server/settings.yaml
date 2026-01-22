@@ -1,13 +1,13 @@
 db:
-    mode:
-    db_name: fast_db
-    host: 127.0.0.1
+    mode: mysql
+    db_name: db
+    host: 10.2.0.2
     port: 3306
     user: root
     password: 123456
 redis:
-    addr: ""
-    password: "123"
+    addr: 10.2.0.3:6379
+    password: ""
     db: 1
 system:             # gin配置
     mode: release   # debug or release or test
