@@ -2,12 +2,14 @@ package api
 
 import (
 	"fast_gin/api/captcha_api"
+	"fast_gin/api/doc_api"
 	"fast_gin/api/image_api"
 	"fast_gin/api/user_api"
 )
 
 // api总入口，通过点api再点其他的来实现统一管理
 type Api struct {
+	DocApi     doc_api.DocApi
 	UserApi    user_api.UserApi
 	ImageApi   image_api.ImageApi
 	CaptchaApi captcha_api.CaptchaApi

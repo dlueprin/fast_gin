@@ -15,6 +15,7 @@ func Run() {
 
 	//curl -X POST 127.0.0.1:8080/api/users/login
 	g := r.Group("api") //创建api开头的路由组
+	DocRouter(g)
 	UserRouter(g)
 	ImageRouter(g)
 	CaptchaRouter(g)

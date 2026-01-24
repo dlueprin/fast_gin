@@ -10,6 +10,7 @@ import (
 func MigrateDB() {
 	err := global.DB.AutoMigrate(
 		&model.UserModel{},
+		&model.DocumentModel{},
 	)
 	if err != nil {
 		logrus.Errorf("表结构迁移失败：%s", err)
