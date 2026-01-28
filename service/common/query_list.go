@@ -16,7 +16,7 @@ type QueryOption struct {
 }
 
 func QueryList[T any](model any, option QueryOption) (list []T, count int64, err error) {
-	list = make([]T, 0)
+	list = make([]T, 0)             //泛型主要是用在这里，获取模型后返回模型列表
 	query := global.DB.Where(model) //这里填入的model可以根据模型对象自动构建合理的空查询，初始化查询构建器,之前填的“”也是这个道理
 	//模糊匹配，真是绕了好大一圈啊
 	if option.Key != "" {
@@ -26,7 +26,7 @@ func QueryList[T any](model any, option QueryOption) (list []T, count int64, err
 				//用or连接所有模糊查询语句
 				likeQuery.Or(
 					fmt.Sprintf("%s like ?", column),
-					fmt.Sprintf("%%%s%%", option.Key),
+					fmt.Sprintf("%%%s%%", option.Key), //这两句实际上是一句，就是xx like ? , 关键词
 				)
 			}
 			query.Where(likeQuery)
