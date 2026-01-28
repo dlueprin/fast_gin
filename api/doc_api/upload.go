@@ -43,17 +43,25 @@ func (d DocApi) DocUploadView(c *gin.Context) {
 	claims := middleware.GetAuth(c)
 	userID := claims.UserID
 	var docService doc_ser.DocService
-	docRecode := model.DocumentModel{
+	docRecord := model.DocumentModel{
 		Title:    fileHeader.Filename,
 		Path:     filePath,
 		FileType: ext,
 		UserID:   userID,
 	}
-	if err = docService.UploadDoc(&docRecode); err != nil {
+	if err = docService.UploadDoc(&docRecord); err != nil {
 		logrus.Errorf("保存文件信息到数据库失败:%s", err)
 		res.FailWithMsg("文件上传失败", c)
 		return
 	}
-	res.OkWithMsg("文件上传成功", c)
+
+	//ai异步处理部分
+	go docService.AsyncAnalyze(&docRecord)
+
+	res.OkWithData(gin.H{
+		"id":    docRecord.ID,
+		"title": docRecord.Title,
+		"msg":   "文件上传成功，ai摘要正在后台生成中",
+	}, c)
 
 }

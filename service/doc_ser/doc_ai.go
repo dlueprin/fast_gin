@@ -1,0 +1,135 @@
+package doc_ser
+
+import (
+	"context"
+	"fast_gin/global"
+	"fast_gin/model"
+	"github.com/sashabaranov/go-openai"
+	"github.com/sirupsen/logrus"
+	"os"
+)
+
+//下面是用resty实现的ai接口调用，ai说不推荐使用，但是可以作为参考
+//type AiChatResponse struct {
+//	Choices []struct {
+//		Message struct {
+//			Content string `json:"content"`
+//		} `json:"message"`
+//	} `json:"choices"`
+//}
+//
+//func (s *DocService) AsyncAnalyze(doc *model.DocumentModel) {
+//	//1、读数据库文档，为ai阅读做准备
+//	contentBytes, err := os.ReadFile(doc.Path)
+//	if err != nil {
+//		logrus.Errorf("[ai]无法读取文件：%v", err)
+//		return
+//	}
+//	content := string(contentBytes)
+//
+//	//2、使用resty调用ai
+//	client := resty.New()
+//	var result AiChatResponse
+//	resp, err := client.R().
+//		SetHeader("Authorization", "Bearer "+global.Config.AI.ApiKey).
+//		SetBody(map[string]any{
+//			"model": global.Config.AI.Model,
+//			"messages": []map[string]string{
+//				{"role": "system", "content": "你是一个专业的知识库助手，请对用户提供的文档内容进行100字以内的摘要。"},
+//				{"role": "user", "content": content},
+//			},
+//		}).
+//		SetResult(&result).
+//		Post(global.Config.AI.BaseUrl + "/chat/completions")
+//	//if err != nil || len(result.Choices) == 0 {
+//	//	logrus.Errorf("[ai]接口调用异常%v", err)
+//	//	return
+//	//}
+//	// --- 开始详细排查日志 ---
+//	if err != nil {
+//		logrus.Errorf("[AI] 网络请求失败: %v", err)
+//		return
+//	}
+//
+//	// 如果没有 choices，打印出到底回了什么
+//	if len(result.Choices) == 0 {
+//		logrus.Errorf("[AI] 接口未返回结果。状态码: %d, 响应原文: %s", resp.StatusCode(), resp.String())
+//		return
+//	}
+//
+//	//3.接受结果
+//	summary := result.Choices[0].Message.Content
+//
+//	//4.异步更新数据库
+//	err = global.DB.Model(doc).Updates(map[string]any{
+//		"summary":     summary,
+//		"content":     content,
+//		"is_analyzed": true,
+//	}).Error
+//
+//	if err != nil {
+//		logrus.Errorf("[ai]数据库更新失败%v", err)
+//	} else {
+//		logrus.Infof("[ai]文章《%s》ai摘要生成完成", doc.Title)
+//	}
+//}
+
+// 下面是用火山引擎的sdk实现调用
+func (s *DocService) AsyncAnalyze(doc *model.DocumentModel) {
+	//1、读本地文档
+	contentBytes, err := os.ReadFile(doc.Path)
+	if err != nil {
+		logrus.Errorf("[ai]无法读取文件%s", err)
+		return
+	}
+	content := string(contentBytes)
+
+	//2、初始化ai链接配置
+	config := openai.DefaultConfig(global.Config.AI.ApiKey)
+	config.BaseURL = global.Config.AI.BaseUrl
+	client := openai.NewClientWithConfig(config)
+
+	//3、发送请求
+	logrus.Infof("[ai]正在调用ai接口进行摘要生成，使用模型：%s", global.Config.AI.Model)
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: global.Config.AI.Model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "你是专业文档分析助手，用中文输出不超过100字的精准摘要，无需开场白和结束语，直接提供核心要点。",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: content,
+				},
+			},
+		},
+	)
+
+	//4、异常处理
+	if err != nil {
+		logrus.Errorf("[ai]SDK调用失败：%s", err)
+		return
+	}
+	if len(resp.Choices) <= 0 {
+		logrus.Errorf("[ai]接口未返回结果")
+		return
+	}
+
+	//5、提取并更新数据库
+	summary := resp.Choices[0].Message.Content
+	err = global.DB.Model(doc).Updates(map[string]any{
+		"content":     content,
+		"summary":     summary,
+		"is_analyzed": true,
+	}).Error
+
+	if err != nil {
+		logrus.Errorf("[ai]数据库更新失败%s", err)
+		return
+	} else {
+		logrus.Infof("[ai]文章《%s》ai摘要生成完成，摘要已存入数据库", doc.Title)
+	}
+}

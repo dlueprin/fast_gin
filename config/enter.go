@@ -9,4 +9,5 @@ type Config struct {
 	Image  Image  `yaml:"image"`
 	Doc    Doc    `yaml:"doc"`
 	Site   Site   `yaml:"site"`
+	AI     AI     `yaml:"ai"`
 }
