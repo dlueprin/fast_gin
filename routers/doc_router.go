@@ -2,6 +2,7 @@ package routers
 
 import (
 	"fast_gin/api"
+	"fast_gin/api/doc_api"
 	"fast_gin/middleware"
 	"fast_gin/model"
 	"github.com/gin-gonic/gin"
@@ -17,5 +18,10 @@ func DocRouter(g *gin.RouterGroup) {
 	g.GET("doc",
 		middleware.BindQueryMiddleware[model.PageInfo],
 		app.DocListView,
+	)
+	g.DELETE("doc",
+		middleware.AuthMiddleware,
+		middleware.BindJsonMiddleware[doc_api.DocDeleteRequest],
+		app.DocDeleteView,
 	)
 }
