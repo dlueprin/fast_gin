@@ -4,9 +4,10 @@ import (
 	"context"
 	"fast_gin/global"
 	"fast_gin/model"
+	"fast_gin/utils/textclean"
+	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 //下面是用resty实现的ai接口调用，ai说不推荐使用，但是可以作为参考
@@ -75,14 +76,29 @@ import (
 //}
 
 // 下面是用火山引擎的sdk实现调用
-func (s *DocService) AsyncAnalyze(doc *model.DocumentModel) {
-	//1、读本地文档
-	contentBytes, err := os.ReadFile(doc.Path)
+func (s *DocService) AsyncAnalyze(doc *model.DocumentModel, ext string) {
+	//1、调用服务层解析方法读本地的文字内容
+	var content string
+	var err error
+	switch ext {
+	case ".md", ".txt":
+		content, err = ReadPlainText(doc.Path)
+	case ".pdf":
+		content, err = ReadPdfText(doc.Path)
+	case ".docx":
+		content, err = ReadDocxText(doc.Path)
+	default:
+		err = fmt.Errorf("暂不支持当前格式：%s", ext)
+	}
 	if err != nil {
-		logrus.Errorf("[ai]无法读取文件%s", err)
+		logrus.Errorf("[ai]解析文件失败:%s", err)
 		return
 	}
-	content := string(contentBytes)
+
+	//内部转换带来的无效格式（多余的换行符或类似\x00）的处理
+	content = textclean.CleanInvalidUTF8(content)
+	//过长文档处理，限制5000字，减少token消耗
+	content = smartTruncate(content, 5000)
 
 	//2、初始化ai链接配置
 	config := openai.DefaultConfig(global.Config.AI.ApiKey)
@@ -132,4 +148,21 @@ func (s *DocService) AsyncAnalyze(doc *model.DocumentModel) {
 	} else {
 		logrus.Infof("[ai]文章《%s》ai摘要生成完成，摘要已存入数据库", doc.Title)
 	}
+}
+
+func smartTruncate(text string, maxLen int) string {
+	//之前没用rune切片，是用字节为单位的，如果切的时候恰好出现把汉字切断的情况，就会导致乱码，然后数据库就敏感了报错
+	//现在rune是按字符为单位，就不会出现切断汉字的情况，涉及汉字切片都建议用rune处理
+	runes := []rune(text)
+
+	if len(runes) <= maxLen {
+		return text
+	}
+	headLen := int(float64(maxLen) * 0.7)
+	tailLen := maxLen - headLen
+
+	head := string(runes[:headLen])
+	tail := string(runes[len(runes)-tailLen:])
+
+	return fmt.Sprintf("%s\n\n...[此处省略中间部分]...\n\n%s", head, tail)
 }

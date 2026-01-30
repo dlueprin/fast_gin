@@ -24,9 +24,9 @@ func (d DocApi) DocUploadView(c *gin.Context) {
 	}
 	//校验后缀
 	ext := strings.ToLower(path.Ext(fileHeader.Filename))
-	if ext != ".txt" && ext != ".md" {
+	if ext != ".txt" && ext != ".md" && ext != ".pdf" && ext != ".docx" {
 		logrus.Errorf("上传了非文档格式的文件：%s", ext)
-		res.FailWithMsg("目前只支持txt和md格式的文件", c)
+		res.FailWithMsg("目前只支持pdf、docx、txt和md格式的文件", c)
 	}
 	basePath := path.Join("uploads", global.Config.Doc.Path)
 	if _, err = os.Stat(basePath); os.IsExist(err) {
@@ -56,7 +56,7 @@ func (d DocApi) DocUploadView(c *gin.Context) {
 	}
 
 	//ai异步处理部分
-	go docService.AsyncAnalyze(&docRecord)
+	go docService.AsyncAnalyze(&docRecord, ext)
 
 	res.OkWithData(gin.H{
 		"id":    docRecord.ID,
