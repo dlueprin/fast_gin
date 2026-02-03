@@ -11,7 +11,7 @@ import (
 // AuthMiddleware 认证中间件，就是一个视图
 func AuthMiddleware(c *gin.Context) {
 	token := c.GetHeader("token")
-	_, err := jwts.CheckToken(token)
+	claims, err := jwts.CheckToken(token)
 	if err != nil {
 		logrus.Errorf("用户auth请求处token验证失败：%s", err)
 		res.FailWithMsg("token认证失败", c)
@@ -25,6 +25,7 @@ func AuthMiddleware(c *gin.Context) {
 		return
 	}
 	logrus.Info("用户auth请求处token验证成功")
+	c.Set("claims", claims)
 	//直接放行
 	c.Next()
 }
