@@ -97,6 +97,8 @@ func (s *DocService) AsyncAnalyze(doc *model.DocumentModel, ext string) {
 
 	//内部转换带来的无效格式（多余的换行符或类似\x00）的处理
 	content = textclean.CleanInvalidUTF8(content)
+	//多余换行符和空格处理
+	content = textclean.CleanSpacing(content)
 	//过长文档处理，限制5000字，减少token消耗
 	content = smartTruncate(content, 5000)
 

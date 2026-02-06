@@ -34,7 +34,7 @@ func ReadPdfText(path string) (string, error) {
 
 	//正则表达式清洗多余换行符和空格
 	re := regexp.MustCompile(`\s+`)
-	res := re.ReplaceAllString(buf.String(), "")
+	res := re.ReplaceAllString(buf.String(), " ")
 
 	return res, nil
 }

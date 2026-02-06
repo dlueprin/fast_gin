@@ -3,6 +3,7 @@ package doc_ser
 import (
 	"fast_gin/global"
 	"fast_gin/model"
+	"regexp"
 )
 
 //ALTER TABLE document_models ADD FULLTEXT INDEX ft_title_summary (title, summary) WITH PARSER ngram;
@@ -15,6 +16,9 @@ func (s *DocService) GetDocList(page model.PageInfo) (list []model.DocumentModel
 	if global.Config.System.Mode == "debug" {
 		db = db.Debug()
 	}
+
+	//默认加载用户表
+	db = db.Preload("User")
 
 	//2、根据是否有关键词决定用什么搜索方法
 	if page.Key != "" {
@@ -57,5 +61,12 @@ func (s *DocService) GetDocList(page model.PageInfo) (list []model.DocumentModel
 	offset := (page.Page - 1) * page.Limit
 	err = db.Limit(page.Limit).Offset(offset).Find(&list).Error
 
+	//5、高亮搜索词
+	if page.Key != "" {
+		re := regexp.MustCompile("(?i)(" + regexp.QuoteMeta(page.Key) + ")")
+		for i := range list {
+			list[i].Summary = re.ReplaceAllString(list[i].Summary, "<em class='search-key'>$1</em>")
+		}
+	}
 	return
 }

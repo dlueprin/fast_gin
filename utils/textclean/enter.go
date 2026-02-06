@@ -1,6 +1,7 @@
 package textclean
 
 import (
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -20,4 +21,16 @@ func CleanInvalidUTF8(s string) string {
 		s = string(v)
 	}
 	return s
+}
+
+func CleanSpacing(s string) string {
+	renewLine := regexp.MustCompile(`\n{3,}`)
+	s = renewLine.ReplaceAllString(s, "\n\n")
+
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimSpace(line)
+	}
+
+	return strings.Join(lines, "\n")
 }
