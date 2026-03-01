@@ -24,4 +24,10 @@ func DocRouter(g *gin.RouterGroup) {
 		middleware.BindJsonMiddleware[doc_api.DocDeleteRequest],
 		app.DocDeleteView,
 	)
+	g.POST("doc/search",
+		middleware.LimitMiddleware(1),
+		middleware.AuthMiddleware,
+		middleware.BindJsonMiddleware[doc_api.DocSearchRequest],
+		app.DocSearchView,
+	)
 }

@@ -11,6 +11,14 @@ import (
 	"net/http"
 )
 
+// SearchResult chroma搜索返回内容的结构体
+type SearchResult struct {
+	Text     string  `json:"text"`
+	DocID    int     `json:"doc_id"`
+	Distance float64 `json:"distance"` //相似度距离
+}
+
+// EmbeddingResponse 用户输入的向量化返回
 type EmbeddingResponse struct {
 	Data []struct {
 		Embedding []float32 `json:"embedding"`
@@ -22,6 +30,7 @@ type EmbeddingResponse struct {
 	} `json:"error"`
 }
 
+// GetEmbeddings 获取用户输入的向量化接口
 func (s *DocService) GetEmbeddings(chunks []string) ([][]float32, error) {
 	//1、获取配置
 	apiKey := global.Config.AI.Embedding.ApiKey
@@ -63,6 +72,8 @@ func (s *DocService) GetEmbeddings(chunks []string) ([][]float32, error) {
 
 	return vectors, nil
 }
+
+// GetCollectionID 获取集合ID用于存库
 func GetCollectionID() (string, error) {
 	name := global.Config.Chroma.Collection
 
@@ -110,6 +121,7 @@ func GetCollectionID() (string, error) {
 	return "", fmt.Errorf("创建集合失败,%s", string(cBody))
 }
 
+// SyncToChroma chroma同步接口
 func (s *DocService) SyncToChroma(colID string, docID int, userID int, chunks []string, vectors [][]float32) error {
 	//1、构造插入url
 	upsertURL := fmt.Sprintf("%s/collections/%s/upsert", getChromaAdminURL(), colID)
@@ -144,6 +156,59 @@ func (s *DocService) SyncToChroma(colID string, docID int, userID int, chunks []
 		return fmt.Errorf("chroma响应错误：%s", string(respBody))
 	}
 	return nil
+}
+
+// Search chroma的用户语义搜索
+func (s *DocService) Search(userID int, query string, nResult int) ([]SearchResult, error) {
+	//1、向量化用户输入
+	queryVectors, err := s.GetEmbeddings([]string{query})
+	if err != nil || len(queryVectors) == 0 {
+		return nil, fmt.Errorf("语义解析失败：%v", err)
+	}
+
+	//2、获取集合id,用于查询
+	colID, err := GetCollectionID()
+	if err != nil {
+		return nil, err
+	}
+
+	//3、chroma的query请求，进行数据库查询
+	queryURL := fmt.Sprintf("%s/collections/%s/query", getChromaAdminURL(), colID)
+	payload := map[string]any{
+		"query_embeddings": queryVectors,
+		"n_results":        nResult,
+		"where":            map[string]any{"user_id": userID},
+	}
+	body, _ := json.Marshal(payload)
+
+	resp, err := http.Post(queryURL, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	//4、解析响应
+	var queryRes struct {
+		Documents [][]string         `json:"documents"`
+		Metadatas [][]map[string]any `json:"metadatas"`
+		Distances [][]float64        `json:"distances"`
+	}
+	json.NewDecoder(resp.Body).Decode(&queryRes)
+
+	//5、组装返回格式
+	var results []SearchResult
+	if len(queryRes.Documents) > 0 {
+		for i := range queryRes.Documents[0] {
+			docID := int(queryRes.Metadatas[0][i]["doc_id"].(float64))
+			results = append(results, SearchResult{
+				Text:     queryRes.Documents[0][i],
+				DocID:    docID,
+				Distance: queryRes.Distances[0][i],
+			})
+		}
+	}
+
+	return results, nil
 }
 
 func getChromaAdminURL() string {
