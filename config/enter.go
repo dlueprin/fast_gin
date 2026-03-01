@@ -10,4 +10,5 @@ type Config struct {
 	Doc    Doc    `yaml:"doc"`
 	Site   Site   `yaml:"site"`
 	AI     AI     `yaml:"ai"`
+	Chroma Chroma `yaml:"chroma"`
 }

@@ -103,16 +103,16 @@ func (s *DocService) AsyncAnalyze(doc *model.DocumentModel, ext string) {
 	content = smartTruncate(content, 5000)
 
 	//2、初始化ai链接配置
-	config := openai.DefaultConfig(global.Config.AI.ApiKey)
-	config.BaseURL = global.Config.AI.BaseUrl
+	config := openai.DefaultConfig(global.Config.AI.LLM.ApiKey)
+	config.BaseURL = global.Config.AI.LLM.BaseUrl
 	client := openai.NewClientWithConfig(config)
 
 	//3、发送请求
-	logrus.Infof("[ai]正在调用ai接口进行摘要生成，使用模型：%s", global.Config.AI.Model)
+	logrus.Infof("[ai]正在调用ai接口进行摘要生成，使用模型：%s", global.Config.AI.LLM.Model)
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model: global.Config.AI.Model,
+			Model: global.Config.AI.LLM.Model,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
@@ -150,6 +150,35 @@ func (s *DocService) AsyncAnalyze(doc *model.DocumentModel, ext string) {
 	} else {
 		logrus.Infof("[ai]文章《%s》ai摘要生成完成，摘要已存入数据库", doc.Title)
 	}
+
+	// --- 第二阶段：RAG 向量入库 ---
+	logrus.Infof("[RAG]开始为文档《%s》建立向量索引", doc.Title)
+
+	//1、创建或获取集合id
+	colId, err := GetCollectionID()
+	if err != nil {
+		logrus.Errorf("[RAG]获取chroma集合失败:%v", err)
+		return
+	}
+
+	//2、正文分块
+	chunks := MakeChunks(content, 500)
+
+	//3、获取向量
+	vectors, err := s.GetEmbeddings(chunks)
+	if err != nil {
+		logrus.Errorf("[RAG]向量化失败：%v", err)
+		return
+	}
+
+	//4、向量化入库
+	err = s.SyncToChroma(colId, doc.ID, doc.UserID, chunks, vectors)
+	if err != nil {
+		logrus.Errorf("[RAG]Chroma入库失败：%v", err)
+		return
+	}
+
+	logrus.Infof("[分析完成]文档《%s》已经处理完毕，摘要已经存入mysql，%d个向量块已经存入chroma", doc.Title, len(chunks))
 }
 
 func smartTruncate(text string, maxLen int) string {
@@ -167,4 +196,17 @@ func smartTruncate(text string, maxLen int) string {
 	tail := string(runes[len(runes)-tailLen:])
 
 	return fmt.Sprintf("%s\n\n...[此处省略中间部分]...\n\n%s", head, tail)
+}
+
+// 分块函数
+func MakeChunks(text string, chunkSize int) (chunks []string) {
+	runes := []rune(text)
+	for i := 0; i < len(runes); i += chunkSize {
+		end := i + chunkSize
+		if end > len(runes) {
+			end = len(runes)
+		}
+		chunks = append(chunks, string(runes[i:end]))
+	}
+	return
 }
