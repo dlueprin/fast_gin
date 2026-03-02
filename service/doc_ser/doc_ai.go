@@ -102,29 +102,33 @@ func (s *DocService) AsyncAnalyze(doc *model.DocumentModel, ext string) {
 	//过长文档处理，限制5000字，减少token消耗
 	content = smartTruncate(content, 5000)
 
-	//2、初始化ai链接配置
-	config := openai.DefaultConfig(global.Config.AI.LLM.ApiKey)
-	config.BaseURL = global.Config.AI.LLM.BaseUrl
-	client := openai.NewClientWithConfig(config)
+	////2、初始化ai链接配置
+	//config := openai.DefaultConfig(global.Config.AI.LLM.ApiKey)
+	//config.BaseURL = global.Config.AI.LLM.BaseUrl
+	//client := openai.NewClientWithConfig(config)
+	//
+	////3、发送请求
+	//logrus.Infof("[ai]正在调用ai接口进行摘要生成，使用模型：%s", global.Config.AI.LLM.Model)
+	//resp, err := client.CreateChatCompletion(
+	//	context.Background(),
+	//	openai.ChatCompletionRequest{
+	//		Model: global.Config.AI.LLM.Model,
+	//		Messages: []openai.ChatCompletionMessage{
+	//			{
+	//				Role:    openai.ChatMessageRoleSystem,
+	//				Content: "你是专业文档分析助手，用中文输出不超过100字的精准摘要，无需开场白和结束语，直接提供核心要点。",
+	//			},
+	//			{
+	//				Role:    openai.ChatMessageRoleUser,
+	//				Content: content,
+	//			},
+	//		},
+	//	},
+	//)
 
-	//3、发送请求
+	//2、初始化ai链接配置,发送请求
+	resp, err := GetChatResult("你是专业文档分析助手，用中文输出不超过100字的精准摘要，无需开场白和结束语，直接提供核心要点。", content)
 	logrus.Infof("[ai]正在调用ai接口进行摘要生成，使用模型：%s", global.Config.AI.LLM.Model)
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: global.Config.AI.LLM.Model,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "你是专业文档分析助手，用中文输出不超过100字的精准摘要，无需开场白和结束语，直接提供核心要点。",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: content,
-				},
-			},
-		},
-	)
 
 	//4、异常处理
 	if err != nil {
@@ -208,5 +212,31 @@ func MakeChunks(text string, chunkSize int) (chunks []string) {
 		}
 		chunks = append(chunks, string(runes[i:end]))
 	}
+	return
+}
+
+func GetChatResult(systemPrompt string, userPrompt string) (response openai.ChatCompletionResponse, err error) {
+	//初始化ai链接配置
+	config := openai.DefaultConfig(global.Config.AI.LLM.ApiKey)
+	config.BaseURL = global.Config.AI.LLM.BaseUrl
+	client := openai.NewClientWithConfig(config)
+
+	//发送请求
+	response, err = client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: global.Config.AI.LLM.Model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: systemPrompt,
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: userPrompt,
+				},
+			},
+		},
+	)
 	return
 }

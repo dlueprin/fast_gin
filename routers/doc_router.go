@@ -30,4 +30,10 @@ func DocRouter(g *gin.RouterGroup) {
 		middleware.BindJsonMiddleware[doc_api.DocSearchRequest],
 		app.DocSearchView,
 	)
+	g.POST("doc/chat",
+		middleware.LimitMiddleware(1),
+		middleware.AuthMiddleware,
+		middleware.BindJsonMiddleware[doc_api.DocChatRequest],
+		app.DocChatView,
+	)
 }
