@@ -8,5 +8,5 @@ import (
 
 func CaptchaRouter(g *gin.RouterGroup) {
 	app := api.App.CaptchaApi
-	g.GET("captcha/generate", middleware.LimitMiddleware(1), app.GenerateView)
+	g.GET("captcha/generate", middleware.LimitMiddleware(10), app.GenerateView)
 }

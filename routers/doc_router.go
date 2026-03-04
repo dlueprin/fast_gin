@@ -16,6 +16,7 @@ func DocRouter(g *gin.RouterGroup) {
 		app.DocUploadView, //gin会自动传上下文
 	)
 	g.GET("doc",
+		middleware.AuthMiddleware,
 		middleware.BindQueryMiddleware[model.PageInfo],
 		app.DocListView,
 	)

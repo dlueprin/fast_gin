@@ -12,6 +12,9 @@ import (
 func AuthMiddleware(c *gin.Context) {
 	token := c.GetHeader("token")
 	claims, err := jwts.CheckToken(token)
+	logrus.Debugf("所有请求头：%+v", c.Request.Header)
+	logrus.Debugf("获取到的 token: [%s]", token)
+	logrus.Debugf("token 长度：%d", len(token))
 	if err != nil {
 		logrus.Errorf("用户auth请求处token验证失败：%s", err)
 		res.FailWithMsg("token认证失败", c)
