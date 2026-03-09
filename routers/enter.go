@@ -35,5 +35,11 @@ func Run() {
 		logrus.Infof("后端服务运行在：%s", addr)
 	}
 
-	r.Run(addr)
+	logrus.Info("开始启动 HTTP 服务器...")
+	err := r.Run(addr)
+	if err != nil {
+		logrus.Errorf("HTTP 服务器启动失败：%v", err)
+		panic(err)
+	}
+	logrus.Info("HTTP 服务器已停止")
 }

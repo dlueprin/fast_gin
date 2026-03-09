@@ -211,19 +211,19 @@ func (s *DocService) Search(userID int, query string, nResult int) ([]SearchResu
 	return results, nil
 }
 
-// GetChatContext 获取整合好的完整返回文本
-func (s *DocService) GetChatContext(userID int, query string) (contextText string, err error) {
+// GetChatContext 获取整合好的完整返回文本,现在新增一个分开的结果，用于结果的资料卡片单独展示
+func (s *DocService) GetChatContext(userID int, query string) (results []SearchResult, contextText string, err error) {
 	//1、获取相关度最高的结果
-	results, err := s.Search(userID, query, 5)
+	results, err = s.Search(userID, query, 5)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	//2、拼接所有结果
 	for i, result := range results {
 		contextText += fmt.Sprintf("\n---资料片段%d---\n%s\n", i+1, result.Text)
 	}
-	return contextText, nil
+	return results, contextText, nil
 }
 func getChromaAdminURL() string {
 	return fmt.Sprintf("%s/api/v2/tenants/default_tenant/databases/default_database", global.Config.Chroma.Host)

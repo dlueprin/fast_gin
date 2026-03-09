@@ -2,12 +2,14 @@ package doc_ser
 
 import (
 	"context"
+	"errors"
 	"fast_gin/global"
 	"fast_gin/model"
 	"fast_gin/utils/textclean"
 	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
+	"io"
 )
 
 //下面是用resty实现的ai接口调用，ai说不推荐使用，但是可以作为参考
@@ -239,4 +241,51 @@ func GetChatResult(systemPrompt string, userPrompt string) (response openai.Chat
 		},
 	)
 	return
+}
+
+func (s *DocService) GetChatStream(systemPrompt string, userPrompt string, callback func(string)) error {
+	//初始化ai链接配置
+	config := openai.DefaultConfig(global.Config.AI.LLM.ApiKey)
+	config.BaseURL = global.Config.AI.LLM.BaseUrl
+	client := openai.NewClientWithConfig(config)
+
+	//发送流式请求
+	stream, err := client.CreateChatCompletionStream(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: global.Config.AI.LLM.Model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: systemPrompt,
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: userPrompt,
+				},
+			},
+			Stream: true, //启用流式传输
+		},
+	)
+	if err != nil {
+		return err
+	}
+	defer stream.Close()
+
+	for {
+		response, err := stream.Recv()
+		//errors.Is是专门用来比较当前错误和目标错误的，这里捕获文件结束的“错误”然后退出结束循环
+		if errors.Is(err, io.EOF) { //End Of File 表示流结束
+			return nil //流结束
+		}
+		if err != nil {
+			return err
+		}
+
+		content := response.Choices[0].Delta.Content
+		if content != "" {
+			//我调用你，你里面的代码又调用了我的代码：这个回调函数是调用方传进来的
+			callback(content)
+		}
+	}
 }

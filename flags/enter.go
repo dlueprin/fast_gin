@@ -4,6 +4,7 @@ import (
 	"fast_gin/global"
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -50,4 +51,6 @@ func Run() {
 		}
 		os.Exit(0)
 	}
+	// 如果没有匹配到任何条件，说明是正常 Web 启动
+	logrus.Infof("[flags] 未匹配命令行参数，准备启动 Web 服务")
 }
