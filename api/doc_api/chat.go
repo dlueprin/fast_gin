@@ -2,9 +2,12 @@ package doc_api
 
 import (
 	"encoding/json"
+	"fast_gin/global"
 	"fast_gin/middleware"
+	"fast_gin/model"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type DocChatRequest struct {
@@ -41,6 +44,7 @@ type DocChatRequest struct {
 //	}
 
 func (d DocApi) DocChatView(c *gin.Context) {
+	var fullReply string
 	//1、绑定关键词
 	cr := middleware.GetBind[DocChatRequest](c)
 	//2、获取用户id
@@ -65,15 +69,29 @@ func (d DocApi) DocChatView(c *gin.Context) {
 	//6、生成（G）并立即返回
 	//先发参考资料包
 	contextJson, _ := json.Marshal(results)
-	c.SSEvent("message", "[METADATA]"+string(contextJson))
+	c.SSEvent("content", string(contextJson))
 	c.Writer.Flush()
 	//再发sse正文
 	err = docService.GetChatStream(systemPrompt, cr.Query, func(content string) {
-		//每拿到一个字就会调用当前函数发送
+		//每拿到一个字就会存起来并调用当前函数发送
+		fullReply += content
 		c.SSEvent("message", content)
 		c.Writer.Flush() //强制刷新缓冲区
 	})
 	if err != nil {
 		c.SSEvent("error", "ai响应中断"+err.Error())
+		return
 	}
+	//7、保存聊天记录
+	chatRecord := model.ChatHistoryModel{
+		UserID:  userID,
+		Query:   cr.Query,
+		Answer:  fullReply,
+		Context: string(contextJson),
+	}
+	if err = global.DB.Create(&chatRecord).Error; err != nil {
+		logrus.Errorf("保存聊天记录失败:%v", err)
+	}
+	//8、回传对话id，用于历史记录查询
+	c.SSEvent("id", chatRecord.ID)
 }

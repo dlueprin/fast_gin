@@ -3,6 +3,7 @@ package middleware
 import (
 	"fast_gin/utils/res"
 	"github.com/gin-gonic/gin"
+	"sync"
 	"time"
 )
 
@@ -25,16 +26,22 @@ func NewLimiter(limit int, duration time.Duration) *Limiter {
 type Limiter struct {
 	limit      int                //限制的请求数量
 	duration   time.Duration      //时间窗口
-	timestamps map[string][]int64 //请求的时间戳，是ip地址对应时间戳切片，或者说是时间戳列表
+	timestamps map[string][]int64 //请求的时间戳，是 ip 地址对应时间戳切片，或者说是时间戳列表
+	mu         sync.RWMutex       //读写锁，保护 timestamps 的并发访问
 }
 
 // 使用方法来实现中间件
 func (l *Limiter) Middleware(c *gin.Context) {
-	// 获取ip
+	// 获取 ip
 	ip := c.ClientIP()
+
+	// 使用写锁保护整个操作过程（因为涉及读、修改、写）
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	//检查时间戳是否存在，不存在就创建
 	if _, ok := l.timestamps[ip]; !ok {
-		l.timestamps[ip] = make([]int64, 0) //开辟一个ip键的空时间戳切片
+		l.timestamps[ip] = make([]int64, 0) //开辟一个 ip 键的空时间戳切片
 	}
 	//当前秒级时间戳，代表从 Unix 纪元（1970 年 1 月 1 日 00:00:00 UTC）到当前时间的秒数
 	now := time.Now().Unix()

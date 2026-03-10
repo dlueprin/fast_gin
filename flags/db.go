@@ -11,6 +11,7 @@ func MigrateDB() {
 	err := global.DB.AutoMigrate(
 		&model.UserModel{},
 		&model.DocumentModel{},
+		&model.ChatHistoryModel{},
 	)
 	if err != nil {
 		logrus.Errorf("表结构迁移失败：%s", err)
