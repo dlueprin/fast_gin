@@ -43,4 +43,9 @@ func DocRouter(g *gin.RouterGroup) {
 		middleware.BindQueryMiddleware[doc_api.HistoryRequest],
 		app.ChatHistoryView,
 	)
+	g.GET("doc/:doc_id",
+		middleware.LimitMiddleware(10),
+		middleware.AuthMiddleware,
+		app.DocDetailView,
+	)
 }
